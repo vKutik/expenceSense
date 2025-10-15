@@ -512,12 +512,9 @@
                         document.getElementById('userDetails').textContent = 
                             `@${currentUser.username || 'user'}`;
                         
-                        if (currentUser.level) {
-                            document.getElementById('userLevel').textContent = currentUser.level.toUpperCase();
-                        }
-                        if (currentUser.storage_type) {
-                            document.getElementById('storageInfo').textContent = currentUser.storage_type.replace('_', ' ').toUpperCase();
-                        }
+                        // Hide user level and storage info for authenticated Telegram users
+                        document.getElementById('userLevel').style.display = 'none';
+                        document.getElementById('storageInfo').style.display = 'none';
                         
                         // Load categories and expenses
                         await loadCategories();
@@ -553,8 +550,9 @@
                         `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
                     document.getElementById('userDetails').textContent = 
                         `@${currentUser.username}`;
-                    document.getElementById('userLevel').textContent = 'GUEST';
-                    document.getElementById('storageInfo').textContent = 'MEMORY STORAGE';
+                    // Hide user level and storage info for Telegram users
+                    document.getElementById('userLevel').style.display = 'none';
+                    document.getElementById('storageInfo').style.display = 'none';
                     
                     // Load categories and expenses
                     await loadCategories();
@@ -595,13 +593,9 @@
                     document.getElementById('userDetails').textContent = 
                         `@${currentUser.username || 'user'}`;
                     
-                    // Update user level and storage info
-                    if (currentUser.level) {
-                        document.getElementById('userLevel').textContent = currentUser.level.toUpperCase();
-                    }
-                    if (currentUser.storage_type) {
-                        document.getElementById('storageInfo').textContent = currentUser.storage_type.replace('_', ' ').toUpperCase();
-                    }
+                    // Hide user level and storage info for authenticated users
+                    document.getElementById('userLevel').style.display = 'none';
+                    document.getElementById('storageInfo').style.display = 'none';
                     
                     // Populate categories
                     populateCategories();
@@ -676,8 +670,9 @@
                         document.getElementById('userName').textContent = 'Guest User';
                         document.getElementById('userDetails').textContent = '@guest';
                     }
-                    document.getElementById('userLevel').textContent = 'GUEST';
-                    document.getElementById('storageInfo').textContent = 'MEMORY STORAGE';
+                    // Hide user level and storage info
+                    document.getElementById('userLevel').style.display = 'none';
+                    document.getElementById('storageInfo').style.display = 'none';
                     
                     await loadExpenses();
                     await loadStats();
