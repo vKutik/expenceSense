@@ -22,7 +22,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuration
-BOT_TOKEN = "8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4"
+BOT_TOKEN = os.getenv('BOT_TOKEN', '8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4')
 DATABASE_PATH = 'expenses.db'
 
 # In-memory storage for demo (replace with database in production)
