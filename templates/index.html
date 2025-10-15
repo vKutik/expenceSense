@@ -483,43 +483,40 @@
             const avatarElement = document.getElementById('userAvatar');
             
             if (user && user.id) {
-                try {
-                    // Try to get real profile photo from Telegram
-                    console.log('Fetching avatar for user:', user.id);
-                    const response = await fetch(`/api/user/avatar/${user.id}`);
-                    const data = await response.json();
-                    
-                    if (data.success && data.avatar_url) {
-                        // Use real profile photo
-                        avatarElement.innerHTML = `<img src="${data.avatar_url}" alt="Profile" onerror="this.style.display='none'; this.parentElement.innerHTML='${user.first_name?.charAt(0)?.toUpperCase() || 'U'}'; this.parentElement.style.background='#007bff'; this.parentElement.style.color='#ffffff';" />`;
-                        avatarElement.style.background = 'transparent';
-                        avatarElement.style.color = 'transparent';
-                        
-                        console.log('✅ Real avatar loaded:', data.avatar_url);
-                    } else {
-                        // Fallback to initial
-                        const firstName = user.first_name || 'U';
-                        const initial = firstName.charAt(0).toUpperCase();
-                        
-                        avatarElement.innerHTML = initial;
-                        avatarElement.style.background = '#007bff';
-                        avatarElement.style.color = '#ffffff';
-                        
-                        console.log('⚠️ No avatar found, using initial:', initial);
-                    }
-                } catch (error) {
-                    console.error('Error fetching avatar:', error);
-                    
-                    // Fallback to initial on error
-                    const firstName = user.first_name || 'U';
-                    const initial = firstName.charAt(0).toUpperCase();
-                    
-                    avatarElement.innerHTML = initial;
-                    avatarElement.style.background = '#007bff';
-                    avatarElement.style.color = '#ffffff';
-                    
-                    console.log('❌ Avatar fetch failed, using initial:', initial);
-                }
+                // Create a beautiful avatar with user's initial and gradient background
+                const firstName = user.first_name || 'U';
+                const lastName = user.last_name || '';
+                const initial = firstName.charAt(0).toUpperCase();
+                const lastInitial = lastName.charAt(0).toUpperCase();
+                
+                // Create gradient background based on user ID
+                const colors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+                ];
+                const colorIndex = user.id % colors.length;
+                const backgroundColor = colors[colorIndex];
+                
+                // Create avatar with gradient
+                avatarElement.innerHTML = `
+                    <div style="
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, ${backgroundColor}, ${backgroundColor}dd);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 16px;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                    ">
+                        ${initial}${lastInitial}
+                    </div>
+                `;
+                
+                console.log('✅ Created beautiful avatar for:', user.first_name);
             } else {
                 // Default avatar
                 avatarElement.innerHTML = '👤';
