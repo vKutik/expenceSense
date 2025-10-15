@@ -9,6 +9,7 @@ from flask import jsonify, request
 from services import AppService
 from observers import emit_event
 from models import User
+from auth import auth_manager, UserLevel
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +209,72 @@ class BankBalanceController(BaseController):
             return self.handle_exception(e, 'update_balance')
 
 
+class AuthController(BaseController):
+    """Controller for authentication and authorization"""
+    
+    def authenticate(self, telegram_data: Dict[str, Any]) -> tuple:
+        """Authenticate user with Telegram data"""
+        try:
+            result = self.app_service.authenticate_user_with_storage(telegram_data)
+            return self.success_response(result)
+            
+        except Exception as e:
+            return self.handle_exception(e, 'authenticate')
+    
+    def get_permissions(self, user_id: int) -> tuple:
+        """Get user permissions and storage info"""
+        try:
+            if not user_id:
+                return self.error_response('User ID required')
+            
+            result = self.app_service.get_user_permissions(user_id)
+            return self.success_response(result)
+            
+        except Exception as e:
+            return self.handle_exception(e, 'get_permissions')
+    
+    def upgrade_user(self, user_id: int, new_level: str) -> tuple:
+        """Upgrade user level (admin function)"""
+        try:
+            if not user_id:
+                return self.error_response('User ID required')
+            
+            # Validate admin permission
+            user_profile = auth_manager.get_user_profile(user_id)
+            if not user_profile or user_profile.level != UserLevel.ADMIN:
+                return self.error_response('Admin permission required', 403)
+            
+            # Convert string to UserLevel enum
+            try:
+                level = UserLevel(new_level)
+            except ValueError:
+                return self.error_response(f'Invalid user level: {new_level}', 400)
+            
+            result = self.app_service.upgrade_user_level(user_id, level)
+            return self.success_response(result)
+            
+        except Exception as e:
+            return self.handle_exception(e, 'upgrade_user')
+    
+    def validate_token(self, token: str) -> tuple:
+        """Validate authentication token"""
+        try:
+            auth_token = auth_manager.validate_token(token)
+            if auth_token:
+                return self.success_response({
+                    'valid': True,
+                    'user_id': auth_token.user_id,
+                    'level': auth_token.level.value,
+                    'permissions': auth_token.permissions,
+                    'expires_at': auth_token.expires_at.isoformat()
+                })
+            else:
+                return self.error_response('Invalid or expired token', 401)
+                
+        except Exception as e:
+            return self.handle_exception(e, 'validate_token')
+
+
 class ControllerFactory:
     """Factory for creating controllers"""
     
@@ -220,5 +287,6 @@ class ControllerFactory:
             'category': CategoryController(app_service),
             'statistics': StatisticsController(app_service),
             'health': HealthController(app_service),
-            'balance': BankBalanceController(app_service)
+            'balance': BankBalanceController(app_service),
+            'auth': AuthController(app_service)
         }

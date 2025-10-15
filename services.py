@@ -8,6 +8,8 @@ from datetime import datetime
 
 from models import User, Expense, Category, ExpenseFactory, CategoryFactory
 from repository import UserRepository, ExpenseRepository, CategoryRepository, StatisticsRepository
+from auth import auth_manager, UserLevel, UserProfile
+from storage_manager import storage_manager
 
 logger = logging.getLogger(__name__)
 
@@ -275,3 +277,83 @@ class AppService:
         """Get user's bank balance"""
         balance = self.user_service.get_bank_balance(user_id)
         return {'success': True, 'balance': balance}
+    
+    def authenticate_user_with_storage(self, telegram_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Authenticate user and setup appropriate storage"""
+        try:
+            # Authenticate user
+            auth_result = auth_manager.authenticate_user(telegram_data)
+            
+            if not auth_result['success']:
+                return auth_result
+            
+            user_data = auth_result['user']
+            user_profile = auth_manager.get_user_profile(user_data['telegram_id'])
+            
+            if not user_profile:
+                return {'success': False, 'error': 'User profile not found'}
+            
+            # Get appropriate storage backend
+            storage_backend = storage_manager.get_user_storage(user_profile)
+            storage_info = storage_manager.get_storage_info(user_profile.storage_type)
+            
+            # Load categories using appropriate storage
+            categories = self.category_service.get_all_categories()
+            storage_backend.save_categories(categories)
+            
+            # Return enhanced auth result with storage info
+            result = auth_result.copy()
+            result['storage_info'] = storage_info
+            result['user']['storage_type'] = user_profile.storage_type.value
+            
+            logger.info(f"User {user_data['telegram_id']} authenticated with {user_profile.storage_type.value} storage")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Authentication error: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def get_user_permissions(self, user_id: int) -> Dict[str, Any]:
+        """Get user permissions and storage info"""
+        try:
+            user_profile = auth_manager.get_user_profile(user_id)
+            if not user_profile:
+                return {'success': False, 'error': 'User not found'}
+            
+            storage_info = storage_manager.get_storage_info(user_profile.storage_type)
+            
+            return {
+                'success': True,
+                'level': user_profile.level.value,
+                'storage_type': user_profile.storage_type.value,
+                'storage_info': storage_info,
+                'permissions': user_profile.permissions,
+                'created_at': user_profile.created_at.isoformat(),
+                'last_login': user_profile.last_login.isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error getting user permissions: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def upgrade_user_level(self, user_id: int, new_level: UserLevel) -> Dict[str, Any]:
+        """Upgrade user level (admin function)"""
+        try:
+            success = auth_manager.update_user_level(user_id, new_level)
+            if success:
+                user_profile = auth_manager.get_user_profile(user_id)
+                storage_info = storage_manager.get_storage_info(user_profile.storage_type)
+                
+                return {
+                    'success': True,
+                    'message': f'User upgraded to {new_level.value}',
+                    'new_level': new_level.value,
+                    'storage_type': user_profile.storage_type.value,
+                    'storage_info': storage_info,
+                    'permissions': user_profile.permissions
+                }
+            else:
+                return {'success': False, 'error': 'Failed to upgrade user'}
+        except Exception as e:
+            logger.error(f"Error upgrading user: {e}")
+            return {'success': False, 'error': str(e)}

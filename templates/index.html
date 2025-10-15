@@ -71,6 +71,25 @@
             margin: 0;
         }
 
+        .user-level {
+            font-size: 10px;
+            font-weight: 500;
+            margin: 2px 0 0 0;
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .storage-info {
+            font-size: 9px;
+            margin: 2px 0 0 0;
+            opacity: 0.6;
+            color: #ffffff;
+        }
+
         .balance {
             font-size: 24px;
             font-weight: bold;
@@ -359,6 +378,8 @@
                 <div class="user-details">
                     <h3 id="userName">Loading...</h3>
                     <p id="userDetails">Telegram User</p>
+                    <div id="userLevel" class="user-level">Guest</div>
+                    <div id="storageInfo" class="storage-info">Memory Storage</div>
                 </div>
             </div>
             <div class="balance" id="totalBalance">$0.00</div>
@@ -473,11 +494,19 @@
                     console.log('User:', currentUser);
                     console.log('Categories:', categories);
                     
-                    // Update UI
+                    // Update UI with authentication info
                     document.getElementById('userName').textContent = 
                         `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
                     document.getElementById('userDetails').textContent = 
                         `@${currentUser.username || 'user'}`;
+                    
+                    // Update user level and storage info
+                    if (currentUser.level) {
+                        document.getElementById('userLevel').textContent = currentUser.level.toUpperCase();
+                    }
+                    if (currentUser.storage_type) {
+                        document.getElementById('storageInfo').textContent = currentUser.storage_type.replace('_', ' ').toUpperCase();
+                    }
                     
                     // Populate categories
                     populateCategories();
@@ -515,9 +544,11 @@
                     populateCategories();
                     
                     // Set default user for testing
-                    currentUser = { id: 1, first_name: 'Test', last_name: 'User', username: 'testuser' };
+                    currentUser = { id: 1, first_name: 'Test', last_name: 'User', username: 'testuser', level: 'guest', storage_type: 'memory' };
                     document.getElementById('userName').textContent = 'Test User';
                     document.getElementById('userDetails').textContent = '@testuser';
+                    document.getElementById('userLevel').textContent = 'GUEST';
+                    document.getElementById('storageInfo').textContent = 'MEMORY STORAGE';
                     
                     await loadExpenses();
                     await loadStats();
