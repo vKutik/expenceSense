@@ -247,6 +247,28 @@
             color: #2ECC71;
         }
 
+        .expense-amount-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            opacity: 0.7;
+        }
+
+        .delete-btn:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+            opacity: 1;
+        }
+
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -402,7 +424,7 @@
         <div class="content">
             <!-- Add Expense Form -->
             <div class="expense-form">
-                <h3 style="margin-bottom: 20px; color: #000000;">Add New Expense</h3>
+                <h3 style="margin-bottom: 20px; color: #000000;">New Transaction</h3>
                 <div class="form-group">
                     <label for="expenseAmount">Amount</label>
                     <input type="number" id="expenseAmount" placeholder="0.00" step="0.01" min="0">
@@ -417,7 +439,7 @@
                     <label for="expenseDescription">Description (optional)</label>
                     <textarea id="expenseDescription" placeholder="What did you spend on?" rows="3"></textarea>
                 </div>
-                <button class="btn" onclick="addExpense()">Add Expense</button>
+                <button class="btn" onclick="addExpense()">Add Transaction</button>
             </div>
 
             <!-- Expense List -->
@@ -791,6 +813,12 @@
                     const option = document.createElement('option');
                     option.value = category.id;
                     option.textContent = `${category.emoji} ${category.name}`;
+                    
+                    // Set "Other" as default selected option
+                    if (category.id === 7) {
+                        option.selected = true;
+                    }
+                    
                     select.appendChild(option);
                 });
                 console.log('Categories populated successfully');
@@ -837,7 +865,7 @@
                 const amountClass = isIncome ? 'income-amount' : 'expense-amount';
                 
                 return `
-                <div class="expense-item">
+                <div class="expense-item" data-expense-id="${expense.id}">
                     <div class="expense-icon" style="background-color: ${expense.category?.color || '#000000'};">
                         ${expense.category?.emoji || '📦'}
                     </div>
@@ -845,7 +873,12 @@
                         <h4>${expense.category?.name || 'Unknown'}</h4>
                         <p>${expense.description || 'No description'}</p>
                     </div>
-                    <div class="${amountClass}">${amountDisplay}</div>
+                    <div class="expense-amount-container">
+                        <div class="${amountClass}">${amountDisplay}</div>
+                        <button class="delete-btn" onclick="deleteExpense(${expense.id})" title="Delete expense">
+                            🗑️
+                        </button>
+                    </div>
                 </div>
                 `;
             }).join('');
@@ -973,6 +1006,37 @@
         // Hide settings
         function hideSettings() {
             document.getElementById('settingsSection').classList.add('hidden');
+        }
+
+        // Delete expense
+        async function deleteExpense(expenseId) {
+            if (!confirm('Are you sure you want to delete this transaction?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/expenses/${expenseId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Remove from local array
+                    expenses = expenses.filter(expense => expense.id !== expenseId);
+                    
+                    // Reload data
+                    await loadExpenses();
+                    await loadStats();
+                    
+                    showSuccess('Transaction deleted successfully!');
+                } else {
+                    showError('Failed to delete transaction: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+                showError('Failed to delete transaction');
+            }
         }
 
         // Show error message

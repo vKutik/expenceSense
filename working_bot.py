@@ -66,7 +66,7 @@ Click the button below to open the Mini App and start tracking your expenses!
             {
                 "text": "📱 Open Expense Tracker",
                 "web_app": {
-                    "url": "https://snake-1t3mbymo5-volodymyr-s-projects-9f0184a4.vercel.app"
+                    "url": "https://snake-l0nvoj96w-volodymyr-s-projects-9f0184a4.vercel.app"
                 }
             }
         ], [
