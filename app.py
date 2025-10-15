@@ -38,7 +38,8 @@ DEFAULT_CATEGORIES = [
     {'id': 4, 'name': 'Entertainment', 'emoji': '🎬', 'color': '#96CEB4'},
     {'id': 5, 'name': 'Health', 'emoji': '🏥', 'color': '#FFEAA7'},
     {'id': 6, 'name': 'Utilities', 'emoji': '⚡', 'color': '#DDA0DD'},
-    {'id': 7, 'name': 'Other', 'emoji': '📦', 'color': '#98D8C8'}
+    {'id': 7, 'name': 'Other', 'emoji': '📦', 'color': '#98D8C8'},
+    {'id': 8, 'name': 'Income', 'emoji': '💰', 'color': '#2ECC71', 'type': 'income'}
 ]
 
 def verify_telegram_webapp_data(init_data: str, bot_token: str) -> Optional[Dict[str, str]]:
@@ -139,10 +140,19 @@ def get_expenses():
             category = next((cat for cat in DEFAULT_CATEGORIES if cat['id'] == expense['category_id']), None)
             expense['category'] = category
         
+        # Calculate balance: income adds money, expenses subtract money
+        balance = 0
+        for expense in expenses:
+            category = next((cat for cat in DEFAULT_CATEGORIES if cat['id'] == expense['category_id']), None)
+            if category and category.get('type') == 'income':
+                balance += expense['amount']  # Income adds money
+            else:
+                balance -= expense['amount']  # Expenses subtract money
+        
         return jsonify({
             'success': True,
             'expenses': expenses,
-            'total': sum(expense['amount'] for expense in expenses)
+            'total': balance
         })
         
     except Exception as e:

@@ -241,6 +241,12 @@
             color: #000000;
         }
 
+        .income-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2ECC71;
+        }
+
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -825,7 +831,12 @@
             // Show only recent 5 expenses
             const recentExpenses = expenses.slice(-5).reverse();
             
-            container.innerHTML = recentExpenses.map(expense => `
+            container.innerHTML = recentExpenses.map(expense => {
+                const isIncome = expense.category?.type === 'income';
+                const amountDisplay = isIncome ? `+$${expense.amount.toFixed(2)}` : `-$${expense.amount.toFixed(2)}`;
+                const amountClass = isIncome ? 'income-amount' : 'expense-amount';
+                
+                return `
                 <div class="expense-item">
                     <div class="expense-icon" style="background-color: ${expense.category?.color || '#000000'};">
                         ${expense.category?.emoji || '📦'}
@@ -834,9 +845,10 @@
                         <h4>${expense.category?.name || 'Unknown'}</h4>
                         <p>${expense.description || 'No description'}</p>
                     </div>
-                    <div class="expense-amount">$${expense.amount.toFixed(2)}</div>
+                    <div class="${amountClass}">${amountDisplay}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Add expense
@@ -850,10 +862,8 @@
                 return;
             }
             
-            if (!categoryId) {
-                showError('Please select a category');
-                return;
-            }
+            // If no category selected, automatically use "other" category (id: 7)
+            const finalCategoryId = categoryId || 7;
             
             try {
                 const response = await fetch('/api/expenses', {
@@ -864,7 +874,7 @@
                     body: JSON.stringify({
                         userId: currentUser.id,
                         amount: amount,
-                        categoryId: categoryId,
+                        categoryId: finalCategoryId,
                         description: description
                     })
                 });
@@ -931,7 +941,17 @@
 
         // Update balance
         function updateBalance(total) {
-            document.getElementById('totalBalance').textContent = `$${total.toFixed(2)}`;
+            const balanceElement = document.getElementById('totalBalance');
+            balanceElement.textContent = `$${total.toFixed(2)}`;
+            
+            // Set color based on balance
+            if (total > 0) {
+                balanceElement.style.color = '#2ECC71'; // Green for positive
+            } else if (total < 0) {
+                balanceElement.style.color = '#E74C3C'; // Red for negative
+            } else {
+                balanceElement.style.color = '#000000'; // Black for zero
+            }
         }
 
         // Show statistics
