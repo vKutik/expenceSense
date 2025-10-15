@@ -483,40 +483,57 @@
             const avatarElement = document.getElementById('userAvatar');
             
             if (user && user.id) {
-                // Create a beautiful avatar with user's initial and gradient background
-                const firstName = user.first_name || 'U';
-                const lastName = user.last_name || '';
-                const initial = firstName.charAt(0).toUpperCase();
-                const lastInitial = lastName.charAt(0).toUpperCase();
-                
-                // Create gradient background based on user ID
-                const colors = [
-                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
-                ];
-                const colorIndex = user.id % colors.length;
-                const backgroundColor = colors[colorIndex];
-                
-                // Create avatar with gradient
-                avatarElement.innerHTML = `
-                    <div style="
-                        width: 100%;
-                        height: 100%;
-                        border-radius: 50%;
-                        background: linear-gradient(135deg, ${backgroundColor}, ${backgroundColor}dd);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: white;
-                        font-weight: bold;
-                        font-size: 16px;
-                        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-                    ">
-                        ${initial}${lastInitial}
-                    </div>
-                `;
-                
-                console.log('✅ Created beautiful avatar for:', user.first_name);
+                try {
+                    // Try to get profile photo directly from Telegram API
+                    console.log('Fetching avatar for user:', user.id);
+                    
+                    // Use a proxy service to get the avatar (since direct Telegram API calls are blocked)
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.telegram.org/bot8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4/getUserProfilePhotos?user_id=${user.id}&limit=1`)}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    
+                    if (data.ok && data.result && data.result.total_count > 0) {
+                        // Get the file_id of the profile photo
+                        const photos = data.result.photos[0];
+                        const file_id = photos[photos.length - 1].file_id; // Get the largest size
+                        
+                        // Get file path
+                        const fileProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.telegram.org/bot8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4/getFile?file_id=${file_id}`)}`;
+                        const fileResponse = await fetch(fileProxyUrl);
+                        const fileData = await fileResponse.json();
+                        
+                        if (fileData.ok) {
+                            const file_path = fileData.result.file_path;
+                            const avatar_url = `https://api.telegram.org/file/bot8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4/${file_path}`;
+                            
+                            // Use real profile photo
+                            avatarElement.innerHTML = `<img src="${avatar_url}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.style.display='none'; this.parentElement.innerHTML='👤'; this.parentElement.style.background='#007bff'; this.parentElement.style.color='#ffffff';" />`;
+                            avatarElement.style.background = 'transparent';
+                            avatarElement.style.color = 'transparent';
+                            
+                            console.log('✅ Real avatar loaded:', avatar_url);
+                            return;
+                        }
+                    }
+                    
+                    // Fallback to emoji if no photo found
+                    avatarElement.innerHTML = '👤';
+                    avatarElement.style.background = '#007bff';
+                    avatarElement.style.color = '#ffffff';
+                    
+                    console.log('⚠️ No avatar found, using emoji');
+                    
+                } catch (error) {
+                    console.error('Error fetching avatar:', error);
+                    
+                    // Fallback to emoji on error
+                    avatarElement.innerHTML = '👤';
+                    avatarElement.style.background = '#007bff';
+                    avatarElement.style.color = '#ffffff';
+                    
+                    console.log('❌ Avatar fetch failed, using emoji');
+                }
             } else {
                 // Default avatar
                 avatarElement.innerHTML = '👤';
