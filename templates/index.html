@@ -536,6 +536,40 @@
                     console.log('No Telegram user data available, using fallback');
                 }
                 
+                // Always try to use Telegram data if available, even in fallback mode
+                if (user && user.id) {
+                    console.log('Using Telegram data in fallback mode:', user);
+                    currentUser = {
+                        id: user.id,
+                        first_name: user.first_name || 'User',
+                        last_name: user.last_name || '',
+                        username: user.username || 'user',
+                        level: 'guest',
+                        storage_type: 'memory'
+                    };
+                    
+                    // Update UI with Telegram data
+                    document.getElementById('userName').textContent = 
+                        `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
+                    document.getElementById('userDetails').textContent = 
+                        `@${currentUser.username}`;
+                    document.getElementById('userLevel').textContent = 'GUEST';
+                    document.getElementById('storageInfo').textContent = 'MEMORY STORAGE';
+                    
+                    // Load categories and expenses
+                    await loadCategories();
+                    await loadExpenses();
+                    await loadStats();
+                    
+                    // Configure Telegram WebApp
+                    if (window.Telegram?.WebApp) {
+                        window.Telegram.WebApp.ready();
+                        window.Telegram.WebApp.expand();
+                    }
+                    
+                    return;
+                }
+                
                 // Fallback to regular initialization
                 const response = await fetch('/api/init', {
                     method: 'POST',
@@ -622,10 +656,26 @@
                     console.log('Categories loaded via fallback:', categories);
                     populateCategories();
                     
-                    // Set default user for testing
-                    currentUser = { id: 1, first_name: 'Test', last_name: 'User', username: 'testuser', level: 'guest', storage_type: 'memory' };
-                    document.getElementById('userName').textContent = 'Test User';
-                    document.getElementById('userDetails').textContent = '@testuser';
+                    // Set default user for testing - try to get Telegram data first
+                    const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+                    if (telegramUser && telegramUser.id) {
+                        currentUser = {
+                            id: telegramUser.id,
+                            first_name: telegramUser.first_name || 'User',
+                            last_name: telegramUser.last_name || '',
+                            username: telegramUser.username || 'user',
+                            level: 'guest',
+                            storage_type: 'memory'
+                        };
+                        document.getElementById('userName').textContent = 
+                            `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
+                        document.getElementById('userDetails').textContent = `@${currentUser.username}`;
+                    } else {
+                        // Only use test data if no Telegram data available
+                        currentUser = { id: 1, first_name: 'Guest', last_name: 'User', username: 'guest', level: 'guest', storage_type: 'memory' };
+                        document.getElementById('userName').textContent = 'Guest User';
+                        document.getElementById('userDetails').textContent = '@guest';
+                    }
                     document.getElementById('userLevel').textContent = 'GUEST';
                     document.getElementById('storageInfo').textContent = 'MEMORY STORAGE';
                     
