@@ -475,7 +475,61 @@
             try {
                 // Get Telegram WebApp data
                 const initData = window.Telegram.WebApp.initData || '';
+                const telegramData = window.Telegram.WebApp.initDataUnsafe || {};
                 
+                console.log('Telegram WebApp data:', telegramData);
+                
+                // Try authentication first
+                let authResponse;
+                if (telegramData.user) {
+                    authResponse = await fetch('/api/auth/authenticate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            telegramData: telegramData.user,
+                            initData: initData
+                        })
+                    });
+                    
+                    const authData = await authResponse.json();
+                    console.log('Authentication result:', authData);
+                    
+                    if (authData.success) {
+                        // Use authenticated user data
+                        currentUser = authData.user;
+                        console.log('User authenticated:', currentUser);
+                        
+                        // Update UI with auth info
+                        document.getElementById('userName').textContent = 
+                            `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
+                        document.getElementById('userDetails').textContent = 
+                            `@${currentUser.username || 'user'}`;
+                        
+                        if (currentUser.level) {
+                            document.getElementById('userLevel').textContent = currentUser.level.toUpperCase();
+                        }
+                        if (currentUser.storage_type) {
+                            document.getElementById('storageInfo').textContent = currentUser.storage_type.replace('_', ' ').toUpperCase();
+                        }
+                        
+                        // Load categories and expenses
+                        await loadCategories();
+                        await loadExpenses();
+                        await loadStats();
+                        
+                        // Configure Telegram WebApp
+                        if (window.Telegram && window.Telegram.WebApp) {
+                            window.Telegram.WebApp.ready();
+                            window.Telegram.WebApp.expand();
+                        }
+                        
+                        return;
+                    }
+                }
+                
+                // Fallback to regular initialization
                 const response = await fetch('/api/init', {
                     method: 'POST',
                     headers: {
@@ -529,6 +583,24 @@
                 console.error('Error initializing app:', error);
                 // Fallback: load categories directly
                 await loadCategoriesFallback();
+            }
+        }
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                
+                if (data.success) {
+                    categories = data.categories;
+                    console.log('Categories loaded:', categories);
+                    populateCategories();
+                } else {
+                    console.error('Failed to load categories:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
             }
         }
 

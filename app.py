@@ -12,6 +12,7 @@ from typing import Dict, Any, Optional
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_cors import CORS
+from telegram_bot import bot_handler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -303,6 +304,51 @@ def update_bank_balance():
         return jsonify({'error': 'Balance must be a valid number'}), 400
     
     return controllers['balance'].update_balance(int(user_id), new_balance)
+
+@app.route('/webhook', methods=['POST'])
+async def telegram_webhook():
+    """Handle Telegram webhook updates"""
+    try:
+        if request.method == "POST":
+            # Get the update from Telegram
+            update_data = request.get_json()
+            
+            # Process the update through the bot handler
+            await bot_handler.webhook_handler(update_data, None)
+            
+            return jsonify({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/bot/setup', methods=['POST'])
+async def setup_bot():
+    """Setup bot webhook and mini app"""
+    try:
+        # Setup webhook
+        success = await bot_handler.setup_webhook()
+        
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "Bot webhook configured successfully",
+                "webhook_url": bot_handler.config.get_webhook_url(),
+                "mini_app_url": bot_handler.config.get_mini_app_url()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to setup webhook"
+            }), 500
+    except Exception as e:
+        logger.error(f"Bot setup error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/bot/info', methods=['GET'])
+def get_bot_info():
+    """Get bot configuration information"""
+    from telegram_bot import get_bot_info
+    return jsonify(get_bot_info())
 
 if __name__ == '__main__':
     print("🚀 Starting Telegram Mini App with Clean Architecture...")
