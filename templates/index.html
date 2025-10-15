@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            color: #000000;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #ffffff;
+            min-height: 100vh;
+            border: 2px solid #000000;
+            text-align: center;
+            border-radius: 20px;
+        }
+
+        .header {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid #000000;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 2px solid #000000;
+            color: #000000;
+        }
+
+        .user-details h3 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .user-details p {
+            font-size: 12px;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        .balance {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .expense-form {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 0;
+            margin-bottom: 20px;
+            border: none;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #000000;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #000000;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #000000;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+        }
+
+        .btn-secondary:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .expense-list {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .expense-list h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #000000;
+        }
+
+        .expense-item {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s;
+        }
+
+        .expense-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .expense-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .expense-details {
+            flex: 1;
+        }
+
+        .expense-details h4 {
+            font-size: 16px;
+            margin: 0 0 5px 0;
+            color: #000000;
+        }
+
+        .expense-details p {
+            font-size: 12px;
+            color: #000000;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .expense-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #000000;
+        }
+
+        .error {
+            background: #ffffff;
+            color: #000000;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #000000;
+        }
+
+        .success {
+            background: #ffffff;
+            color: #000000;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #000000;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats-section {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 24px;
+            margin: 0 0 5px 0;
+            color: #000000;
+        }
+
+        .stat-card p {
+            font-size: 12px;
+            color: #000000;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .category-stats {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #000000;
+        }
+
+        .category-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .category-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #000000;
+        }
+
+        .category-amount {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info" id="userInfo">
+                <div class="avatar">👤</div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userDetails">Telegram User</p>
+                </div>
+            </div>
+            <div class="balance" id="totalBalance">$0.00</div>
+        </div>
+
+        <div class="content">
+            <!-- Add Expense Form -->
+            <div class="expense-form">
+                <h3 style="margin-bottom: 20px; color: #000000;">Add New Expense</h3>
+                <div class="form-group">
+                    <label for="expenseAmount">Amount</label>
+                    <input type="number" id="expenseAmount" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="expenseCategory">Category</label>
+                    <select id="expenseCategory">
+                        <option value="">Select category...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDescription">Description (optional)</label>
+                    <textarea id="expenseDescription" placeholder="What did you spend on?" rows="3"></textarea>
+                </div>
+                <button class="btn" onclick="addExpense()">Add Expense</button>
+            </div>
+
+            <!-- Expense List -->
+            <div class="expense-list">
+                <h3>Recent Expenses</h3>
+                <div id="expenseList">
+                    <div class="loading">Loading expenses...</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="showStats()">📊 Statistics</button>
+                <button class="btn btn-secondary" onclick="showSettings()">⚙️ Settings</button>
+            </div>
+
+            <!-- Statistics Section (Hidden by default) -->
+            <div id="statsSection" class="stats-section hidden">
+                <h3 style="margin-bottom: 20px; color: #000000;">Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="totalExpenses">$0.00</h3>
+                        <p>Total Spent</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="expenseCount">0</h3>
+                        <p>Transactions</p>
+                    </div>
+                </div>
+                <div class="category-stats">
+                    <h4 style="margin-bottom: 15px;">By Category</h4>
+                    <div id="categoryStats">
+                        <div class="loading">Loading statistics...</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="hideStats()" style="margin-top: 20px;">Close Statistics</button>
+            </div>
+
+            <!-- Settings Section (Hidden by default) -->
+            <div id="settingsSection" class="stats-section hidden">
+                <h3 style="margin-bottom: 20px; color: #000000;">Settings</h3>
+                <div class="form-group">
+                    <label>App Information</label>
+                    <p style="margin: 10px 0; padding: 10px; border: 2px solid #000000; background: #ffffff;">
+                        <strong>Expense Tracker v1.0</strong><br>
+                        Built with Flask & Clean Architecture<br>
+                        Features: Add expenses, view statistics, category tracking
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>User Data</label>
+                    <p style="margin: 10px 0; padding: 10px; border: 2px solid #000000; background: #ffffff;">
+                        Your data is stored locally in memory.<br>
+                        All expenses are associated with your Telegram account.
+                    </p>
+                </div>
+                <button class="btn" onclick="hideSettings()" style="margin-top: 20px;">Close Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let expenses = [];
+        let categories = [];
+
+        // Initialize the app
+        async function initApp() {
+            try {
+                // Get Telegram WebApp data
+                const initData = window.Telegram.WebApp.initData || '';
+                
+                const response = await fetch('/api/init', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ initData })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    categories = data.categories;
+                    
+                    console.log('App initialized successfully');
+                    console.log('User:', currentUser);
+                    console.log('Categories:', categories);
+                    
+                    // Update UI
+                    document.getElementById('userName').textContent = 
+                        `${currentUser.first_name} ${currentUser.last_name || ''}`.trim();
+                    document.getElementById('userDetails').textContent = 
+                        `@${currentUser.username || 'user'}`;
+                    
+                    // Populate categories
+                    populateCategories();
+                    
+                    // Load expenses
+                    await loadExpenses();
+                    await loadStats();
+                    
+                    // Configure Telegram WebApp
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        window.Telegram.WebApp.ready();
+                        window.Telegram.WebApp.expand();
+                    }
+                } else {
+                    console.error('Failed to initialize app:', data.error);
+                    // Fallback: load categories directly
+                    await loadCategoriesFallback();
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                // Fallback: load categories directly
+                await loadCategoriesFallback();
+            }
+        }
+
+        // Fallback function to load categories directly
+        async function loadCategoriesFallback() {
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                
+                if (data.success) {
+                    categories = data.categories;
+                    console.log('Categories loaded via fallback:', categories);
+                    populateCategories();
+                    
+                    // Set default user for testing
+                    currentUser = { id: 1, first_name: 'Test', last_name: 'User', username: 'testuser' };
+                    document.getElementById('userName').textContent = 'Test User';
+                    document.getElementById('userDetails').textContent = '@testuser';
+                    
+                    await loadExpenses();
+                    await loadStats();
+                } else {
+                    showError('Failed to load categories: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error loading categories fallback:', error);
+                showError('Failed to connect to server');
+            }
+        }
+
+        // Populate categories dropdown
+        function populateCategories() {
+            const select = document.getElementById('expenseCategory');
+            select.innerHTML = '<option value="">Select category...</option>';
+            
+            console.log('Populating categories:', categories);
+            
+            if (categories && categories.length > 0) {
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = `${category.emoji} ${category.name}`;
+                    select.appendChild(option);
+                });
+                console.log('Categories populated successfully');
+            } else {
+                console.error('No categories available');
+                select.innerHTML = '<option value="">No categories available</option>';
+            }
+        }
+
+        // Load expenses
+        async function loadExpenses() {
+            try {
+                const response = await fetch(`/api/expenses?userId=${currentUser.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    expenses = data.expenses;
+                    displayExpenses();
+                    updateBalance(data.total);
+                } else {
+                    showError('Failed to load expenses: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error loading expenses:', error);
+                showError('Failed to load expenses');
+            }
+        }
+
+        // Display expenses
+        function displayExpenses() {
+            const container = document.getElementById('expenseList');
+            
+            if (expenses.length === 0) {
+                container.innerHTML = '<div class="loading">No expenses yet. Add your first expense!</div>';
+                return;
+            }
+            
+            // Show only recent 5 expenses
+            const recentExpenses = expenses.slice(-5).reverse();
+            
+            container.innerHTML = recentExpenses.map(expense => `
+                <div class="expense-item">
+                    <div class="expense-icon" style="background-color: ${expense.category?.color || '#000000'};">
+                        ${expense.category?.emoji || '📦'}
+                    </div>
+                    <div class="expense-details">
+                        <h4>${expense.category?.name || 'Unknown'}</h4>
+                        <p>${expense.description || 'No description'}</p>
+                    </div>
+                    <div class="expense-amount">$${expense.amount.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Add expense
+        async function addExpense() {
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const categoryId = parseInt(document.getElementById('expenseCategory').value);
+            const description = document.getElementById('expenseDescription').value;
+            
+            if (!amount || amount <= 0) {
+                showError('Please enter a valid amount');
+                return;
+            }
+            
+            if (!categoryId) {
+                showError('Please select a category');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/expenses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        amount: amount,
+                        categoryId: categoryId,
+                        description: description
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Clear form
+                    document.getElementById('expenseAmount').value = '';
+                    document.getElementById('expenseCategory').value = '';
+                    document.getElementById('expenseDescription').value = '';
+                    
+                    // Reload data
+                    await loadExpenses();
+                    await loadStats();
+                    
+                    // Show success
+                    showSuccess('Expense added successfully!');
+                } else {
+                    showError('Failed to add expense: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                showError('Failed to add expense');
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`/api/stats?userId=${currentUser.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalExpenses').textContent = `$${data.total.toFixed(2)}`;
+                    document.getElementById('expenseCount').textContent = data.count;
+                    
+                    // Display category stats
+                    const container = document.getElementById('categoryStats');
+                    if (data.category_stats.length === 0) {
+                        container.innerHTML = '<div class="loading">No expenses yet</div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.category_stats.map(stat => `
+                        <div class="category-item">
+                            <div class="category-info">
+                                <div class="category-icon" style="background-color: ${stat.category.color};">
+                                    ${stat.category.emoji}
+                                </div>
+                                <div class="category-name">${stat.category.name}</div>
+                            </div>
+                            <div class="category-amount">$${stat.amount.toFixed(2)} (${stat.percentage.toFixed(1)}%)</div>
+                        </div>
+                    `).join('');
+                } else {
+                    showError('Failed to load statistics: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                showError('Failed to load statistics');
+            }
+        }
+
+        // Update balance
+        function updateBalance(total) {
+            document.getElementById('totalBalance').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // Show statistics
+        function showStats() {
+            document.getElementById('statsSection').classList.remove('hidden');
+            loadStats();
+        }
+
+        // Hide statistics
+        function hideStats() {
+            document.getElementById('statsSection').classList.add('hidden');
+        }
+
+        // Show settings
+        function showSettings() {
+            document.getElementById('settingsSection').classList.remove('hidden');
+        }
+
+        // Hide settings
+        function hideSettings() {
+            document.getElementById('settingsSection').classList.add('hidden');
+        }
+
+        // Show error message
+        function showError(message) {
+            const container = document.querySelector('.content');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const container = document.querySelector('.content');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            container.insertBefore(successDiv, container.firstChild);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        // Initialize app when page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
