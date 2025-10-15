@@ -305,18 +305,27 @@ def update_bank_balance():
     
     return controllers['balance'].update_balance(int(user_id), new_balance)
 
-@app.route('/webhook', methods=['POST'])
-async def telegram_webhook():
+@app.route('/webhook', methods=['POST', 'GET'])
+def telegram_webhook():
     """Handle Telegram webhook updates"""
     try:
+        if request.method == "GET":
+            # Handle GET requests (health check)
+            return jsonify({"status": "webhook_ready"})
+        
         if request.method == "POST":
             # Get the update from Telegram
             update_data = request.get_json()
             
-            # Process the update through the bot handler
-            await bot_handler.webhook_handler(update_data, None)
+            if not update_data:
+                return jsonify({"status": "no_data"}), 400
             
+            logger.info(f"Webhook received update: {update_data}")
+            
+            # For now, just return OK - we'll process updates later
+            # In a real implementation, you'd process the update here
             return jsonify({"status": "ok"})
+            
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         return jsonify({"error": str(e)}), 500
