@@ -359,6 +359,55 @@ def get_bot_info():
     from telegram_bot import get_bot_info
     return jsonify(get_bot_info())
 
+@app.route('/api/user/avatar/<int:user_id>', methods=['GET'])
+def get_user_avatar(user_id):
+    """Get user profile photo from Telegram"""
+    try:
+        import requests
+        
+        # Get user profile photos from Telegram Bot API
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUserProfilePhotos"
+        params = {
+            'user_id': user_id,
+            'limit': 1
+        }
+        
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if data.get('ok') and data.get('result', {}).get('total_count', 0) > 0:
+            # Get the file_id of the profile photo
+            photos = data['result']['photos'][0]
+            file_id = photos[-1]['file_id']  # Get the largest size
+            
+            # Get file path
+            file_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile"
+            file_params = {'file_id': file_id}
+            file_response = requests.get(file_url, params=file_params)
+            file_data = file_response.json()
+            
+            if file_data.get('ok'):
+                file_path = file_data['result']['file_path']
+                avatar_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                
+                return jsonify({
+                    'success': True,
+                    'avatar_url': avatar_url
+                })
+        
+        # No profile photo found
+        return jsonify({
+            'success': False,
+            'message': 'No profile photo found'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting user avatar: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
     print("🚀 Starting Telegram Mini App with Clean Architecture...")
     print(f"🤖 Bot Token: {BOT_TOKEN[:10]}...")

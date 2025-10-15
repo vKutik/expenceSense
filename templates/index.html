@@ -479,22 +479,47 @@
         let categories = [];
 
         // Function to get user avatar from Telegram
-        function updateUserAvatar(user) {
+        async function updateUserAvatar(user) {
             const avatarElement = document.getElementById('userAvatar');
             
             if (user && user.id) {
-                // Try to get avatar from Telegram
-                // Note: Telegram WebApp doesn't provide avatar URL directly
-                // We'll use the user's first name initial as fallback
-                const firstName = user.first_name || 'U';
-                const initial = firstName.charAt(0).toUpperCase();
-                
-                // For now, show initial - in future we could fetch from Telegram API
-                avatarElement.innerHTML = initial;
-                avatarElement.style.background = '#007bff';
-                avatarElement.style.color = '#ffffff';
-                
-                console.log('Updated avatar for user:', user.first_name);
+                try {
+                    // Try to get real profile photo from Telegram
+                    console.log('Fetching avatar for user:', user.id);
+                    const response = await fetch(`/api/user/avatar/${user.id}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.avatar_url) {
+                        // Use real profile photo
+                        avatarElement.innerHTML = `<img src="${data.avatar_url}" alt="Profile" onerror="this.style.display='none'; this.parentElement.innerHTML='${user.first_name?.charAt(0)?.toUpperCase() || 'U'}'; this.parentElement.style.background='#007bff'; this.parentElement.style.color='#ffffff';" />`;
+                        avatarElement.style.background = 'transparent';
+                        avatarElement.style.color = 'transparent';
+                        
+                        console.log('✅ Real avatar loaded:', data.avatar_url);
+                    } else {
+                        // Fallback to initial
+                        const firstName = user.first_name || 'U';
+                        const initial = firstName.charAt(0).toUpperCase();
+                        
+                        avatarElement.innerHTML = initial;
+                        avatarElement.style.background = '#007bff';
+                        avatarElement.style.color = '#ffffff';
+                        
+                        console.log('⚠️ No avatar found, using initial:', initial);
+                    }
+                } catch (error) {
+                    console.error('Error fetching avatar:', error);
+                    
+                    // Fallback to initial on error
+                    const firstName = user.first_name || 'U';
+                    const initial = firstName.charAt(0).toUpperCase();
+                    
+                    avatarElement.innerHTML = initial;
+                    avatarElement.style.background = '#007bff';
+                    avatarElement.style.color = '#ffffff';
+                    
+                    console.log('❌ Avatar fetch failed, using initial:', initial);
+                }
             } else {
                 // Default avatar
                 avatarElement.innerHTML = '👤';
@@ -546,7 +571,7 @@
                             `@${currentUser.username || 'user'}`;
                         
                         // Update user avatar
-                        updateUserAvatar(currentUser);
+                        await updateUserAvatar(currentUser);
                         
                         // Hide user level and storage info for authenticated Telegram users
                         document.getElementById('userLevel').style.display = 'none';
@@ -588,7 +613,7 @@
                         `@${currentUser.username}`;
                     
                     // Update user avatar
-                    updateUserAvatar(currentUser);
+                    await updateUserAvatar(currentUser);
                     
                     // Hide user level and storage info for Telegram users
                     document.getElementById('userLevel').style.display = 'none';
@@ -634,7 +659,7 @@
                         `@${currentUser.username || 'user'}`;
                     
                     // Update user avatar
-                    updateUserAvatar(currentUser);
+                    await updateUserAvatar(currentUser);
                     
                     // Hide user level and storage info for authenticated users
                     document.getElementById('userLevel').style.display = 'none';
@@ -709,7 +734,7 @@
                         document.getElementById('userDetails').textContent = `@${currentUser.username}`;
                         
                         // Update user avatar
-                        updateUserAvatar(currentUser);
+                        await updateUserAvatar(currentUser);
                     } else {
                         // Only use test data if no Telegram data available
                         currentUser = { id: 1, first_name: 'Guest', last_name: 'User', username: 'guest', level: 'guest', storage_type: 'memory' };
@@ -717,7 +742,7 @@
                         document.getElementById('userDetails').textContent = '@guest';
                         
                         // Update user avatar for guest
-                        updateUserAvatar(currentUser);
+                        await updateUserAvatar(currentUser);
                     }
                     // Hide user level and storage info
                     document.getElementById('userLevel').style.display = 'none';
