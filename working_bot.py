@@ -1,203 +1,208 @@
+#!/usr/bin/env python3
 """
-Working Telegram Bot - Processes messages and responds
+Working Telegram Bot - Polling Mode
+This will work immediately without webhook issues
 """
+
 import requests
 import time
 import json
 
+# Bot configuration
 BOT_TOKEN = "8319629279:AAERWVdXipQIoqZR_OPd6RtcFHEb2PNvMG4"
-MINI_APP_URL = "https://snake-gcaeog0dh-volodymyr-s-projects-9f0184a4.vercel.app"
-USER_ID = 489146762  # Your Telegram ID
-
-def send_message(chat_id, text, reply_markup=None):
-    """Send message to user"""
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        'chat_id': chat_id,
-        'text': text,
-        'parse_mode': 'Markdown'
-    }
-    if reply_markup:
-        data['reply_markup'] = json.dumps(reply_markup)
-    
-    response = requests.post(url, json=data)
-    return response.json()
-
-def send_start_message(chat_id):
-    """Send start message with Mini App button"""
-    
-    keyboard = {
-        "inline_keyboard": [
-            [
-                {
-                    "text": "📱 Open Expense Tracker",
-                    "web_app": {
-                        "url": MINI_APP_URL
-                    }
-                }
-            ]
-        ]
-    }
-    
-    message = """
-👋 *Welcome to Expense Tracker!*
-
-💰 Track your expenses with ease
-📊 View detailed statistics  
-🎯 Set and manage budgets
-📱 Access from any device
-
-*Features:*
-• 🏷️ Smart categorization
-• 📈 Visual analytics
-• 💳 Bank balance tracking
-• 🔒 Secure authentication
-• ☁️ Cloud sync (Premium)
-
-Tap the button below to open the app:
-"""
-    
-    return send_message(chat_id, message, keyboard)
-
-def send_help_message(chat_id):
-    """Send help message"""
-    message = """
-*Expense Tracker Bot Commands:*
-
-/start - Open the expense tracker app
-/help - Show this help message
-/about - About the application
-/stats - Quick stats (if authenticated)
-
-*How to use:*
-1. Tap "📱 Open Expense Tracker" to launch the app
-2. Your Telegram account will be automatically authenticated
-3. Start tracking your expenses right away!
-
-*User Levels:*
-👤 Guest - Basic features, session storage
-📝 Registered - Persistent file storage
-⭐ Premium - Database storage, advanced features
-👑 Admin - Cloud storage, full access
-
-*Need help?* Contact support
-"""
-    
-    return send_message(chat_id, message)
-
-def send_about_message(chat_id):
-    """Send about message"""
-    message = """
-*Expense Tracker v1.2*
-
-🎯 *Purpose:* Modern expense tracking with clean design
-🏗️ *Architecture:* Clean Architecture with multiple storage layers
-🔐 *Security:* Multi-level authentication system
-📱 *Platform:* Telegram Mini App
-
-*Technical Features:*
-• Flask backend with clean architecture
-• Multi-tier storage (Memory, File, Database, Cloud)
-• Token-based authentication
-• Real-time updates with observer pattern
-• Mobile-first responsive design
-
-*Storage Options:*
-• 💾 Memory - Fast, session-only
-• 📁 File - Local persistence
-• 🗄️ Database - ACID transactions
-• ☁️ Cloud - Auto backup & sync
-
-*Built with:* Python, Flask, SQLite, HTML5, CSS3
-
-*Developer:* Your Name
-*Version:* 1.2.0
-*Last Updated:* October 2024
-"""
-    
-    return send_message(chat_id, message)
-
-def process_message(update):
-    """Process incoming message"""
-    message = update.get('message', {})
-    chat_id = message.get('chat', {}).get('id')
-    text = message.get('text', '')
-    
-    print(f"Processing message from {chat_id}: {text}")
-    
-    if text == '/start':
-        result = send_start_message(chat_id)
-        print(f"Start message sent: {result.get('ok', False)}")
-        
-    elif text == '/help':
-        result = send_help_message(chat_id)
-        print(f"Help message sent: {result.get('ok', False)}")
-        
-    elif text == '/about':
-        result = send_about_message(chat_id)
-        print(f"About message sent: {result.get('ok', False)}")
-        
-    else:
-        # Respond to any other message
-        result = send_message(chat_id, 
-            "Hi! 👋\n\nUse /start to open the Expense Tracker app!\n\n*Commands:*\n/start - Open app\n/help - Help\n/about - About")
-        print(f"Generic response sent: {result.get('ok', False)}")
+BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 def get_updates(offset=None):
     """Get updates from Telegram"""
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-    params = {}
-    if offset:
-        params['offset'] = offset
+    url = f"{BASE_URL}/getUpdates"
+    params = {"offset": offset, "timeout": 30}
     
-    response = requests.get(url, params=params)
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=35)
+        return response.json()
+    except Exception as e:
+        print(f"Error getting updates: {e}")
+        return None
+
+def send_message(chat_id, text, reply_markup=None):
+    """Send message to user"""
+    url = f"{BASE_URL}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    
+    if reply_markup:
+        data["reply_markup"] = json.dumps(reply_markup)
+    
+    try:
+        response = requests.post(url, json=data)
+        return response.json()
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        return None
+
+def handle_start(chat_id, username, first_name):
+    """Handle /start command"""
+    welcome_text = f"""
+🎉 <b>Welcome to SpendSense!</b>
+
+Hello {first_name}! 👋
+
+I'm your personal expense tracker bot. Here's what I can do:
+
+📊 <b>Track Expenses</b> - Record your daily spending
+📈 <b>View Statistics</b> - See your spending patterns  
+💰 <b>Manage Budget</b> - Keep track of your finances
+⚙️ <b>Settings</b> - Customize your experience
+
+Click the button below to open the Mini App and start tracking your expenses!
+    """
+    
+    # Inline keyboard with Mini App button
+    keyboard = {
+        "inline_keyboard": [[
+            {
+                "text": "📱 Open Expense Tracker",
+                "web_app": {
+                    "url": "https://snake-ofgsh5b83-volodymyr-s-projects-9f0184a4.vercel.app"
+                }
+            }
+        ], [
+            {"text": "📊 Statistics", "callback_data": "stats"},
+            {"text": "⚙️ Settings", "callback_data": "settings"}
+        ]]
+    }
+    
+    return send_message(chat_id, welcome_text, keyboard)
+
+def handle_help(chat_id):
+    """Handle /help command"""
+    help_text = """
+🆘 <b>SpendSense Help</b>
+
+<b>Available Commands:</b>
+/start - Start using the bot
+/help - Show this help message
+/about - About SpendSense
+/settings - Bot settings
+/stats - Quick statistics
+
+<b>Mini App Features:</b>
+• Add and manage expenses
+• View spending statistics
+• Track categories
+• Bank balance management
+• User authentication
+
+Click "📱 Open Expense Tracker" to use the full app!
+    """
+    
+    return send_message(chat_id, help_text)
+
+def handle_about(chat_id):
+    """Handle /about command"""
+    about_text = """
+🤖 <b>About SpendSense</b>
+
+<b>Version:</b> 1.0
+<b>Framework:</b> Flask + Telegram Mini App
+<b>Features:</b> 
+• Modern design patterns (MVC, Repository, Service Layer)
+• Multi-storage system (Memory, File, Database, Cloud)
+• User authentication levels
+• Real-time expense tracking
+• Bank balance management
+
+Built with ❤️ for expense management
+    """
+    
+    return send_message(chat_id, about_text)
+
+def process_updates(updates):
+    """Process incoming updates"""
+    for update in updates.get("result", []):
+        update_id = update["update_id"]
+        
+        # Handle messages
+        if "message" in update:
+            message = update["message"]
+            chat_id = message["chat"]["id"]
+            text = message.get("text", "")
+            user = message.get("from", {})
+            username = user.get("username", "User")
+            first_name = user.get("first_name", "User")
+            
+            print(f"📨 Received message: '{text}' from {first_name} (@{username})")
+            
+            if text == "/start":
+                print("🚀 Processing /start command...")
+                result = handle_start(chat_id, username, first_name)
+                if result and result.get("ok"):
+                    print("✅ /start command processed successfully!")
+                else:
+                    print(f"❌ /start command failed: {result}")
+            elif text == "/help":
+                print("🆘 Processing /help command...")
+                handle_help(chat_id)
+            elif text == "/about":
+                print("ℹ️ Processing /about command...")
+                handle_about(chat_id)
+            elif text == "/settings":
+                print("⚙️ Processing /settings command...")
+                send_message(chat_id, "⚙️ <b>Settings</b>\n\nOpen the Mini App to access settings!")
+            elif text == "/stats":
+                print("📊 Processing /stats command...")
+                send_message(chat_id, "📊 <b>Statistics</b>\n\nOpen the Mini App to view detailed statistics!")
+            else:
+                print(f"❓ Unknown command: {text}")
+                send_message(chat_id, "I don't understand that command. Send /help for available commands.")
+        
+        # Handle callback queries
+        elif "callback_query" in update:
+            callback_query = update["callback_query"]
+            chat_id = callback_query["message"]["chat"]["id"]
+            data = callback_query["data"]
+            
+            print(f"🔘 Processing callback: {data}")
+            
+            if data == "stats":
+                send_message(chat_id, "📊 <b>Statistics</b>\n\nOpen the Mini App to view detailed statistics!")
+            elif data == "settings":
+                send_message(chat_id, "⚙️ <b>Settings</b>\n\nOpen the Mini App to access settings!")
+        
+        return update_id
+    
+    return None
 
 def main():
     """Main bot loop"""
-    print("🤖 Starting Working Bot...")
-    print(f"📱 Mini App URL: {MINI_APP_URL}")
-    print(f"👤 User ID: {USER_ID}")
-    print("=" * 40)
+    print("🤖 SpendSense Bot Started in Polling Mode!")
+    print("📱 Bot: @spendSenceBot")
+    print("🎯 Ready to handle /start commands!")
+    print("Press Ctrl+C to stop")
+    print("=" * 50)
     
     last_update_id = None
     
-    # Send a welcome message first
-    print("📤 Sending welcome message...")
-    result = send_start_message(USER_ID)
-    if result.get('ok'):
-        print("✅ Welcome message sent!")
-    else:
-        print(f"❌ Failed to send welcome: {result}")
-    
-    while True:
-        try:
-            # Get updates
-            updates = get_updates(offset=last_update_id)
+    try:
+        while True:
+            updates = get_updates(last_update_id)
             
-            if not updates.get('ok'):
-                print(f"❌ Error getting updates: {updates}")
-                time.sleep(5)
-                continue
-            
-            update_list = updates.get('result', [])
-            
-            if update_list:
-                print(f"📨 Processing {len(update_list)} updates...")
-                
-                for update in update_list:
-                    last_update_id = update.get('update_id') + 1
-                    process_message(update)
+            if updates and updates.get("ok"):
+                last_update_id = process_updates(updates)
+                if last_update_id:
+                    last_update_id += 1
             else:
-                print("⏱️ No new updates, waiting...")
-                time.sleep(2)
-                
-        except KeyboardInterrupt:
-            print("\n👋 Bot stopped by user")
-            break
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            time.sleep(5)
+                print("⏳ Waiting for messages...")
+            
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        print("\n🛑 Bot stopped by user")
+    except Exception as e:
+        print(f"❌ Bot error: {e}")
 
 if __name__ == "__main__":
     main()
